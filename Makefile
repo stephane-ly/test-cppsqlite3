@@ -1,3 +1,6 @@
+CXX=g++
+LD=g++
+
 default: release
 
 .PHONY: default release debug all clean

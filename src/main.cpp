@@ -21,65 +21,29 @@ int main(int, char**){
 
         db.open("test.db");
 
-        /* Create a table */
+        /* Create tables */
 
-        db.execDML("create table emp(empno int, empname char(20));");
+        db.execDML("create table pi(pk_pi integer primary key autoincrement, name char(20));");
+        db.execDML("create table source(pk_source integer primary key autoincrement, fk_pi integer, foreign key(fk_pi) references pi(pk_pi));");
+        db.execDML("create table sensor(pk_sensor integer primary key autoincrement, type char(20), name char(20), fk_source integer, foreign key(fk_source) references source(pk_source));");
+        db.execDML("create table actuator(pk_actuator integer primary key autoincrement, name char(20), fk_source integer, foreign key(fk_source) references source(pk_source));");
+        db.execDML("create table sensor_data(pk_sensor_data integer primary key autoincrement, data char(20), time datetime not null default '0000-00-00 00:00:00', fk_sensor integer, foreign key(fk_sensor) references sensor(pk_sensor));");
+        db.execDML("create table actuator_data(pk_actuator_data integer primary key autoincrement, data char(20), time datetime not null default '0000-00-00 00:00:00', fk_actuator integer, foreign key(fk_actuator) references actuator(pk_actuator));");
 
         /* Perform insertions */
 
-        int nRows = db.execDML("insert into emp values (7, 'David Beckham');");
+        int nRows = db.execDML("insert into pi(name) values ('tyr');") 
+	+ db.execDML("insert into source(fk_pi) values (1);")
+	+ db.execDML("insert into source(fk_pi) values (1);")
+	+ db.execDML("insert into source(fk_pi) values (1);")
+	+ db.execDML("insert into sensor(type, name, fk_source) values ('TEMPERATURE', 'Local', 1);")
+	+ db.execDML("insert into sensor(type, name, fk_source) values ('HUMIDITY', 'Local', 1);")
+	+ db.execDML("insert into sensor(type, name, fk_source) values ('TEMPERATURE', 'rf_weather_1', 2);")
+	+ db.execDML("insert into sensor(type, name, fk_source) values ('HUMIDITY', 'rf_weather_1', 2);")
+	+ db.execDML("insert into actuator(name, fk_source) values ('rf_button_1', 2);");
+	+ db.execDML("insert into actuator(name, fk_source) values ('ir_remote', 3);");
         std::cout << nRows << " rows inserted" << std::endl;
 
-        /* Perform updates */
-
-        nRows = db.execDML( "update emp set empname = 'Christiano Ronaldo' where empno = 7;");
-        std::cout << nRows << " rows updated" << std::endl;
-
-        /* Perform deletions */
-
-        nRows = db.execDML("delete from emp where empno = 7;");
-        std::cout << nRows << " rows deleted" << std::endl;
-
-        /* Execute a scalar operation (only retuns one value) */
-
-        std::cout << db.execScalar("select count(*) from emp;") << " rows in emp table ";
-
-        /* Insert and get the ID of the inserted row (auto increment primary key */
-
-        std::cout << std::endl << "Auto increment test" << std::endl;
-        db.execDML("drop table emp;");
-        db.execDML( "create table emp(empno integer primary key, empname char(20));");
-
-        for (int i = 0; i < 5; i++){
-            char buf[128];
-            sprintf(buf, "insert into emp (empname) values ('Empname%06d');", i+1);
-            db.execDML(buf);
-            std::cout << " primary key: " << db.lastRowId() << std::endl;
-        }
-
-        /* Execute a SELECT and display the results */
-
-        std::cout << std::endl << "Select statement test" << std::endl;
-        CppSQLite3Query q = db.execQuery("select * from emp order by 1;");
-
-        for (int field = 0; field < q.numFields(); field++){
-            std::cout << q.fieldName(field) << "|";
-        }
-
-        std::cout << std::endl;
-
-        while (!q.eof()){
-            std::cout << q.fieldValue(0) << "|"
-                      << q.fieldValue(1) << "|" << std::endl;
-            q.nextRow();
-        }
-
-        /* The wrapper has some utility functions to create queries with quotes */
-
-        CppSQLite3Buffer bufSQL;
-        bufSQL.format("insert into emp (empname) values (%Q);", "He's bad");
-        std::string query_result(bufSQL);
-        std::cout << query_result << std::endl;
     } catch (CppSQLite3Exception& e){
         std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
     }
