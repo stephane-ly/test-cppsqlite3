@@ -2,3 +2,5 @@ release
 release_debug
 debug
 test.db
+Makefile~
+src/main.cpp~

@@ -46,53 +46,52 @@ int main(int, char**){
 	std::cout << "primary key : " << db.lastRowId() << std::endl;
 
 	/* Execute a SELECT and display the results */
-	CppSQLite3Query sensor_db = db.execQuery("select name from sensor order by name;");
+	CppSQLite3Query sensor_name = db.execQuery("select name,type,pk_sensor from sensor order by name;");
         std::string last_sensor_name;
-        while (!sensor_db.eof()){
-	    if(sensor_db.fieldValue(0) != last_sensor_name){
-		last_sensor_name = sensor_db.fieldValue(0);
+        std::string last_sensor_type;
+        int last_sensor_pk;
+        while (!sensor_name.eof()){
+		last_sensor_name = sensor_name.fieldValue(0);
+		last_sensor_type = sensor_name.fieldValue(1);
+		last_sensor_pk = sensor_name.getIntField(2);
 		std::cout << "Driver name : " << last_sensor_name << std::endl;
-	        CppSQLite3Query sensor_type = db.execQuery("select pk_sensor,type from sensor order by 1;");
-        	std::string last_sensor_value;
-                std::string last_sensor_type;
-                while (!sensor_type.eof()){
-	    	    if(sensor_type.fieldValue(1) != last_sensor_type){
-	   	    	last_sensor_value = sensor_type.fieldValue(0);
-	   	    	last_sensor_type = sensor_type.fieldValue(1);
-			CppSQLite3Query sensor_data = db.execQuery("select data,fk_sensor from sensor_data order by 1;");
-                	std::string last_sensor_data;
-                	while (!sensor_data.eof()){
-	    	   	    if(sensor_data.fieldValue(0) != last_sensor_data && last_sensor_value == sensor_data.fieldValue(1)){
-	   	    	        last_sensor_data = sensor_data.fieldValue(0);
-	        		std::cout << last_sensor_type << " : " << last_sensor_data  << std::endl;
-			    }
-            	            sensor_data.nextRow();
-			}
-		    }
-            	    sensor_type.nextRow();
-            	}
-	    }
-            sensor_db.nextRow();
+		CppSQLite3Buffer bufSQL;
+        	bufSQL.format("select data from sensor_data where fk_sensor=%d", last_sensor_pk);
+        	std::string query_result(bufSQL);
+		CppSQLite3Query temperature_data = db.execQuery(query_result.c_str());
+               	std::string last_temperature_data;
+                while (!temperature_data.eof()){
+	   	   	last_temperature_data = temperature_data.fieldValue(0);
+			if(last_sensor_type=="TEMPERATURE")
+	        	   std::cout << "Temperature : " << last_temperature_data  << std::endl;
+			else if(last_sensor_type=="HUMIDITY")
+	        	   std::cout << "Humidity : " << last_temperature_data  << std::endl;
+			else
+	        	   std::cout << "Other : " << last_temperature_data  << std::endl;
+		    
+            	    temperature_data.nextRow();
+            	}	    	
+	 
+            sensor_name.nextRow();
         }
-	CppSQLite3Query actuator_db = db.execQuery("select pk_actuator,name from actuator order by name;");
-	std::string last_actuator_value;
+	CppSQLite3Query actuator_name = db.execQuery("select pk_actuator,name from actuator order by name;");
+	int last_actuator_pk;
 	std::string last_actuator_name;
-        while (!actuator_db.eof()){
-	    if(actuator_db.fieldValue(1) != last_actuator_name){
-		last_actuator_value = actuator_db.fieldValue(0);
-		last_actuator_name = actuator_db.fieldValue(1);
+        while (!actuator_name.eof()){
+		last_actuator_pk = actuator_name.getIntField(0);
+		last_actuator_name = actuator_name.fieldValue(1);
 		std::cout << "Driver name : " << last_actuator_name << std::endl;
-	    }
-	    CppSQLite3Query actuator_data_db = db.execQuery("select data,fk_actuator from actuator_data order by 1;");
+		CppSQLite3Buffer buffSQL;
+        	buffSQL.format("select data from actuator_data where fk_actuator=%d", last_actuator_pk);
+        	std::string query_result(buffSQL);
+		CppSQLite3Query actuator_data_db = db.execQuery(query_result.c_str());
             std::string last_actuator_data;
             while (!actuator_data_db.eof()){
-	    	if(actuator_data_db.fieldValue(0) != last_actuator_data && last_actuator_value == actuator_data_db.fieldValue(1)){
-	    	    last_actuator_data = actuator_data_db.fieldValue(0);
-	    	    std::cout << "Last input : " << last_actuator_data << std::endl;
-		}
+	    	last_actuator_data = actuator_data_db.fieldValue(0);
+	    	std::cout << "Last input : " << last_actuator_data << std::endl;
             	actuator_data_db.nextRow();
             }
-            actuator_db.nextRow();
+            actuator_name.nextRow();
         }
 
     } catch (CppSQLite3Exception& e){
